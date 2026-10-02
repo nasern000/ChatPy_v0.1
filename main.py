@@ -5,11 +5,14 @@ TOKEN = os.environ.get('TOKEN')
 ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD', '5876')
 MY_EMAIL = os.environ.get('EMAIL', 'naserabdulrahimn950@gmail.com')
 
+if not TOKEN:
+    print("ОШИБКА: TOKEN не задан!")
+
 VERSION = '0.1'
 CHANGELOG = 'Первый тест ChatPy 0.1 - 12 языков, анонимные чаты'
 CREATOR = 'д-р Мухаммад Фархан'
 
-bot = telebot.TeleBot(TOKEN, threaded=False)
+bot = telebot.TeleBot(TOKEN, threaded=False) if TOKEN else None
 users = set()
 admin_data = {}
 flask_app = Flask(__name__)
@@ -52,7 +55,7 @@ def start(m):
 @bot.message_handler(commands=['info'])
 def info(m):
     users.add(m.chat.id)
-    bot.send_message(m.chat.id, f"ChatPy\nВерсия: {VERSION}\nЧто нового: {CHANGELOG}\nСоздал: {CREATOR}\n12 языков: {', '.join(LANGUAGES)}\nКоманды: /start /info /admin\nСайт: тест на сервере\nРаботает 24/7\nАнонимно")
+    bot.send_message(m.chat.id, f"ChatPy\nВерсия: {VERSION}\nЧто нового: {CHANGELOG}\nСоздал: {CREATOR}\n12 языков: {', '.join(LANGUAGES)}\nКоманды: /start /info /admin\nРаботает 24/7\nАнонимно")
 
 @bot.message_handler(commands=['admin'])
 def admin(m):
@@ -61,11 +64,11 @@ def admin(m):
     if len(parts) < 2:
         bot.send_message(m.chat.id, "Введи: /admin 5876")
         return
-    if parts[1]!= os.environ.get('ADMIN_PASSWORD', ADMIN_PASSWORD):
+    if parts[1]!= ADMIN_PASSWORD:
         u['pass_fails'] += 1
         bot.send_message(m.chat.id, f"Неверный пароль. Попытка {u['pass_fails']}/2")
         if u['pass_fails'] >= 2:
-            send_mail("‼️ТРЕВОГА ВЗЛОМ АДМИНКИ‼️🚨", "‼️ТРЕВОГА ВЗЛОМ АДМИНКИ‼️🚨\nВнимание! Ваш личный кабинет в ChatPy, примите меры.")
+            send_mail("‼️ТРЕВОГА ВЗЛОМ АДМИНКИ‼️", "Внимание! Попытка взлома админки ChatPy")
             u['pass_fails'] = 0
         return
     u['in_admin'] = True; u['is_admin'] = True; u['warn'] = 0; u['pass_fails'] = 0
@@ -112,7 +115,7 @@ def all_msg(m):
                 else:
                     new = str(random.randint(1000,9999))
                     os.environ['ADMIN_PASSWORD'] = new
-                    send_mail(f"‼️ТРЕВОГА + НОВЫЙ ПАРОЛЬ {new}‼️", f"Внимание! Личный кабинет взлом. Новый пароль {new}")
+                    send_mail(f"‼️ТРЕВОГА + НОВЫЙ ПАРОЛЬ {new}‼️", f"Новый пароль {new}")
                     u['in_admin']=False; u['is_admin']=False; u['warn']=0; u['cycle']=0
                     bot.send_message(m.chat.id, "Вы вылетели + пароль сменен и отправлен владельцу."); return
         else: u['warn']=0
@@ -125,7 +128,7 @@ def all_msg(m):
 def home():
     ans = ""
     if request.method == 'POST' and 'q' in request.form: ans = ai(request.form['q'])
-    return render_template_string("""<h2>ChatPy {{v}} | {{creator}} | 24/7</h2><p>Ссылка: {{h}}</p><form method=POST><input name=q style="width:70%" placeholder="Поле для ввода"><button>Отправить</button></form>{% if ans %}<div style="background:#eee;padding:10px;margin-top:10px">{{ans}}</div>{% endif %}<hr><form method=POST action="/review"><textarea name=review placeholder="Отзыв" style="width:70%;height:60px"></textarea><br><button>Отправить отзыв</button></form>""", h=request.host_url, v=VERSION, creator=CREATOR, ans=ans)
+    return render_template_string("""<h2>ChatPy {{v}} | {{creator}} | 24/7</h2><p>Ссылка: {{h}}</p><form method=POST><input name=q style="width:70%"><button>Отправить</button></form>{% if ans %}<div style="background:#eee;padding:10px">{{ans}}</div>{% endif %}<hr><form method=POST action="/review"><textarea name=review style="width:70%;height:60px"></textarea><br><button>Отправить отзыв</button></form>""", h=request.host_url, v=VERSION, creator=CREATOR, ans=ans)
 
 @flask_app.route('/review', methods=['POST'])
 def review():
