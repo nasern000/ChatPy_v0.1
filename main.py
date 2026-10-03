@@ -4,6 +4,7 @@ from flask import Flask, request, render_template_string
 TOKEN = os.environ.get('TOKEN')
 ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD', '5876')
 MY_EMAIL = os.environ.get('EMAIL', 'naserabdulrahimn950@gmail.com')
+API_KEY = os.environ.get('API_KEY') or os.environ.get('GROQ_API_KEY') # <-- ДОБАВИЛ
 
 if not TOKEN:
     print("ОШИБКА: TOKEN не задан!")
@@ -35,6 +36,21 @@ def send_mail(subject, body):
     except: pass
 
 def ai(prompt):
+    # 1. Если есть API_KEY (Groq) - используем его, это УМНЫЙ ИИ
+    if API_KEY:
+        try:
+            r = requests.post("https://api.groq.com/openai/v1/chat/completions",
+                headers={"Authorization": f"Bearer {API_KEY}", "Content-Type": "application/json"},
+                json={
+                    "model": "llama-3.3-70b-versatile",
+                    "messages": [{"role": "user", "content": prompt}]
+                }, timeout=20)
+            if r.ok:
+                return r.json()['choices'][0]['message']['content']
+        except Exception as e:
+            print(f"Groq error: {e}")
+
+    # 2. Фолбэк - бесплатный pollinations
     try:
         r = requests.get(f"https://text.pollinations.ai/{requests.utils.quote(prompt)}?model=openai", timeout=20)
         if r.ok and r.text: return r.text
